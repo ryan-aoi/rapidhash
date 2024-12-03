@@ -3,7 +3,7 @@ import nox
 
 @nox.session(tags=["test"])
 def tests(session):
-    session.install(".", "pytest")
+    session.install(".", "pytest", "numpy", "scipy")
     session.run("pytest")
 
 
