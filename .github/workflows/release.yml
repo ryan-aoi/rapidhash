@@ -44,7 +44,7 @@ jobs:
       run: uv run nox -t test
 
   build:
-    needs: [lint]
+    needs: [lint, test]
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
