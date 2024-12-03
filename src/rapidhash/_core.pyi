@@ -1,0 +1,3 @@
+from __future__ import annotations
+
+def rs_rapidhash(key: bytes, seed: int | None = None) -> int: ...

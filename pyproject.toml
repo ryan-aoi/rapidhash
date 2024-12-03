@@ -1,0 +1,142 @@
+[project]
+name = "rapidhash"
+version = "0.1.0"
+description = "Very fast, high quality, platform-independent hashing algorithm."
+readme = "README.md"
+authors = [
+    { name = "Ryan Aoi", email = "163698864+ryan-aoi@users.noreply.github.com" }
+]
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.maturin]
+module-name = "rapidhash._core"
+python-packages = ["rapidhash"]
+python-source = "src"
+
+[build-system]
+requires = ["maturin>=1.0,<2.0"]
+build-backend = "maturin"
+
+[dependency-groups]
+dev = [
+    "commitizen>=4.0.0",
+    "isort>=5.13.2",
+    "mkdocs-material>=9.5.47",
+    "nox>=2024.10.9",
+    "pre-commit>=4.0.1",
+    "pyright>=1.1.389",
+    "pytest>=8.3.4",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0",
+    "ruff>=0.8.1",
+    "maturin>=1.7.7",
+    "scipy>=1.14.1",
+    "mmh3>=5.0.1",
+    "matplotlib>=3.9.3",
+    "pandas>=2.2.3",
+    "seaborn>=0.13.2",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
+
+[tool.pyright]
+include = ["src"]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    "scripts",
+    "notebooks",
+]
+defineConstant = { DEBUG = true }
+venvPath = "."
+venv = ".venv"
+
+reportMissingImports = true
+reportMissingTypeStubs = false
+reportPrivateImportUsage = false
+
+pythonVersion = "3.10"
+pythonPlatform = "Linux"
+
+[tool.z]
+name = "cz_conventional_commits"
+tag_format = "$version"
+version_scheme = "pep440"
+version_provider = "pep621"
+update_changelog_on_bump = true
+major_version_zero = true
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "A",
+    "ARG",
+    "B",
+    "C",
+    "DTZ",
+    "E",
+    "EM",
+    "F",
+    "FBT",
+    "I",
+    "ICN",
+    "ISC",
+    "N",
+    "PLC",
+    "PLE",
+    "PLR",
+    "PLW",
+    "Q",
+    "RUF",
+    "S",
+    "T",
+    "TID",
+    "UP",
+    "W",
+    "YTT",
+]
+ignore = [
+    # Allow non-abstract empty methods in abstract base classes
+    "B027",
+    # Allow boolean positional values in function calls, like `dict.get(... True)`
+    "FBT003",
+    # Allow boolean parameters in function definitions, like `def foo(bar=True)`
+    "FBT002",
+    # Ignore checks for possible passwords
+    "S105", "S106", "S107",
+    # Ignore complexity
+    "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
+    # Ignore single line string
+    "ISC001"
+]
+unfixable = [
+    # Don't touch unused imports
+    "F401",
+]
+exclude = [
+    "**/*_pb2.py",
+    "**/*_pb2.pyi",
+    "**/*_pb2_grpc.py",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["rapidhash"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.per-file-ignores]
+# Tests can use magic values, assertions, and relative imports
+"tests/**/*" = ["PLR2004", "S101", "TID252", "ARG001"]
+
+[tool.isort]
+known_first_party = ["rapidhash"]
