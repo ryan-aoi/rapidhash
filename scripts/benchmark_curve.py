@@ -29,7 +29,7 @@ def benchmark(fn, text_length, test_num):
 
     logging.info("======== {fn.__name__}({text_length} bytes / {test_num} times) ========")
     t = timeit(run_func, number=test_num)
-    logging.info(f"{fn.__name__}: {t * (1e9) / test_num:.2f} ns")
+    logging.info(f"{fn.__name__}: {t * 1e9 / test_num:.2f} ns")
 
     return t
 
