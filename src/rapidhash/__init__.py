@@ -1,4 +1,4 @@
-from rapidhash._core import rs_rapidhash
+from rapidhash._core import rs_rapidhash, rs_rapidhash_file
 
 
 def rapidhash(key: bytes, seed: int | None = None) -> int:
@@ -22,6 +22,30 @@ def rapidhash(key: bytes, seed: int | None = None) -> int:
     except TypeError as e:
         if not isinstance(key, bytes):
             err = "key must be bytes"
+            raise TypeError(err) from e
+        if not isinstance(seed, int | None):
+            err = "seed must be an integer or None"
+            raise TypeError(err) from e
+
+        err = "invalid argument"
+        raise TypeError(err) from e
+    except OverflowError as e:
+        if seed:
+            if seed < 0:
+                err = "seed must be a non-negative integer"
+                raise ValueError(err) from e
+            if seed > 0xFFFFFFFFFFFFFFFF:  # noqa
+                err = "seed must be a 64-bit integer"
+                raise ValueError(err) from e
+        err = "invalid argument"
+        raise ValueError(err) from e
+
+def rapidhash_file(filename,seed=None) -> int:
+    try:
+        return rs_rapidhash_file(filename,seed)
+    except TypeError as e:
+        if not isinstance(filename, str):
+            err = "filename must be a string"
             raise TypeError(err) from e
         if not isinstance(seed, int | None):
             err = "seed must be an integer or None"

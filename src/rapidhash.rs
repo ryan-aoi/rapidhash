@@ -1,3 +1,5 @@
+use std::io::{BufRead, Read};
+
 pub const RAPID_SEED: u64 = 0xbdd8_9aa9_8270_4029;
 pub const RAPID_SECRET: [u64; 3] = [
     0x2d35_8dcc_aa6c_78a5,
@@ -44,7 +46,6 @@ pub fn rapidhash(key: &[u8], seed: u64, secret: &[u64; 3]) -> u64 {
     let mut seed = seed ^ rapid_mix(seed ^ secret[0], secret[1]) ^ len as u64;
     let mut a;
     let mut b;
-
     if len <= 16 {
         if len >= 4 {
             let delta = ((len & 24) >> (len >> 3)) as usize;
@@ -101,6 +102,93 @@ pub fn rapidhash(key: &[u8], seed: u64, secret: &[u64; 3]) -> u64 {
         b = rapid_read64(&key[len - 8..]);
     }
 
+    a ^= secret[1];
+    b ^= seed;
+    rapid_mum(&mut a, &mut b);
+    rapid_mix(a ^ secret[0] ^ len as u64, b ^ secret[1])
+}
+
+// reference: https://github.com/hoxxep/rapidhash/blob/master/src/rapid_file.rs
+pub fn rapidhash_file(filename: String, seed: u64, secret: &[u64; 3]) -> u64 {
+    let f = std::fs::File::open(filename).expect("Can't open file.");
+    let len = f.metadata().unwrap().len() as usize;
+    let mut reader = std::io::BufReader::new(&f);
+    let mut seed = seed ^ rapid_mix(seed ^ secret[0], secret[1]) ^ len as u64;
+    
+    let mut a;
+    let mut b;
+    if len <= 16 {
+        let mut key = [0u8;48];
+        reader.read_exact(&mut key[..len]).unwrap();
+        if len >= 4 {
+            let delta = ((len & 24) >> (len >> 3)) as usize;
+            let p0 = rapid_read32(&key[0..]);
+            let p1 = rapid_read32(&key[len - 4..]);
+            a = ((p0 as u64) << 32) | (p1 as u64);
+            let p2 = rapid_read32(&key[delta..]);
+            let p3 = rapid_read32(&key[len - 4 - delta..]);
+            b = ((p2 as u64) << 32) | (p3 as u64);
+        } else if len > 0 {
+            a = rapid_read_small(&key, len);
+            b = 0;
+        } else {
+            a = 0;
+            b = 0;
+        }
+    } else {
+        let buffer_size = 255984; // ~ 256KB
+        assert!(buffer_size % 48 == 0);
+        let mut buffer = vec![0u8;buffer_size];
+        let mut i = len;
+        let mut offset = 48;
+        reader.read_exact(&mut buffer[48..std::cmp::min(48+i, buffer_size)]).unwrap();
+        if i > 48 {
+            let mut see1 = seed;
+            let mut see2 = seed;
+            while i >= 48 {
+                let p:&[u8] = &buffer[offset..];
+                seed = rapid_mix(
+                    rapid_read64(&p[0..]) ^ secret[0],
+                    rapid_read64(&p[8..]) ^ seed,
+                );
+                see1 = rapid_mix(
+                    rapid_read64(&p[16..]) ^ secret[1],
+                    rapid_read64(&p[24..]) ^ see1,
+                );
+                see2 = rapid_mix(
+                    rapid_read64(&p[32..]) ^ secret[2],
+                    rapid_read64(&p[40..]) ^ see2,
+                );
+                i -= 48;
+                offset += 48;
+
+                if offset == buffer_size {
+                    let (head, t) = buffer.split_at_mut(48);
+                    head.copy_from_slice(&t[t.len()-48..]);
+                    reader.read_exact(&mut buffer[48..std::cmp::min(48+i, buffer_size)]).unwrap();
+                    offset = 48;
+                }
+            }
+            seed ^= see1 ^ see2;
+        }
+        let p = &buffer[offset..offset+48];
+        if i > 16 {
+            seed = rapid_mix(
+                rapid_read64(&p[0..]) ^ secret[2],
+                rapid_read64(&p[8..]) ^ seed ^ secret[1],
+            );
+            if i > 32 {
+                seed = rapid_mix(
+                    rapid_read64(&p[16..]) ^ secret[2],
+                    rapid_read64(&p[24..]) ^ seed,
+                );
+            }
+        }
+        let end = 48 + i;
+        let tails = &buffer[offset-48..offset+48];
+        a = rapid_read64(&tails[end - 16..]);
+        b = rapid_read64(&tails[end - 8..]);
+    }
     a ^= secret[1];
     b ^= seed;
     rapid_mum(&mut a, &mut b);
